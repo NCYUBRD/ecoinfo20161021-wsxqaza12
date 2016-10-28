@@ -1,0 +1,36 @@
+---
+title: "氣象資料聚合練習"
+author: "黃琪婕"
+date: "2016年10月28日"
+output: html_document
+---
+
+## 讀取資料
+從~/Desktop/R/raw中讀取C0M530.txt，並將空值改為為NA
+
+```{r}
+setwd("~/Desktop/R/raw")
+library(data.table)
+
+c0m5302 <- fread("C0M530.txt",
+                 na.strings = c('-9991','-9995','-9996','-9997','-9998','-9999'))
+
+```
+
+##  設定列名
+因為沒有欄列名稱，因此定義colnamesa("character"),並以setnames替代列名
+
+```{r}
+colnamesa <- c("ston","yyyymmddhh","PS01",'TX01','RH01','WD01','WD02','PP01','SS01')
+setnames(c0m5302, colnamesa)
+
+```
+
+##  時間資料處理 
+新增一行timestamp紀錄處理好的時間資料
+
+```{r}
+c0m5302[, timestamp:=  as.POSIXct(strptime(yyyymmddhh-1,'%Y%m%d%H'))]
+
+```
+
