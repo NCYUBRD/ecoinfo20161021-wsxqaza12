@@ -28,9 +28,15 @@ day_tem <- function(x){
 # 使用aggreate 將分組好的group去計算十年內每月均溫
 month_tem_mean <- aggregate(c0m530$TX01 ~ c0m530$month, c0m530, mean, na.rm = T)
 # 降水量
-month_pre_mean <- aggregate(c0m530$WD02 ~ c0m530$month, c0m530, mean, na.rm = T)
+month_pre_mean_front <- aggregate(c0m530$WD02 ~ c0m530$year + c0m530$month,
+                            c0m530, mean, na.rm = T)
+p <- c("year", "month", "pre")
+setnames(month_pre_mean, p)
+month_pre_mean <- aggregate(month_pre_mean_front$pre ~ month_pre_mean_front$month, 
+                            month_pre_mean, na.rm = T)
 
-# 計算一年中每天的溫度
+
+### 計算一年中每天的溫度
 day_tem_mean <- aggregate(c0m530$TX01 ~ c0m530$month + c0m530$day, c0m530, mean, na.rm = T)
 
 # 取出每一天的最大與最小值
@@ -52,7 +58,7 @@ day_tem_max_mean <- aggregate(day_tem_max$`c0m530$TX01` ~
                                  day_tem_max$`c0m530$month` + day_tem_max$`c0m530$day`,
                               day_tem_max, mean, na.rm = T)
 
-# 跑aggregate來看每年中最暖月及最冷越是誰
+#### 跑aggregate來看每年中最暖月及最冷越是誰
 who_warm_front <- aggregate(c0m530$TX01 ~ c0m530$year + c0m530$month,
                             c0m530, mean, na.rm = T)
 
@@ -119,3 +125,38 @@ while (i <= dim(who_warm)[1]) {
   who_warm[i, 4] <- month_tem_max$max[which]
   i <- i+1
 }
+
+# 最冷月也做一樣的事
+# ----------------------------------------------------------------------
+### 計算最冷⽉的每⽇最⾼溫平均 用day_tem_min已算好的某年某月某日最暖時間
+month_tem_min <- aggregate(day_tem_min$`c0m530$TX01` ~ 
+                             day_tem_min$`c0m530$year` + day_tem_min$`c0m530$month`,
+                           day_tem_min, mean)
+
+a <- c("year", "month", "min")
+setnames(month_tem_min, a)
+
+#  新增一欄年加月方便索引資料
+i <- 1
+while (i <= dim(month_tem_min)[1]) {
+  month_tem_min[i, 4] <- paste(month_tem_min[i, 1], month_tem_min[i, 2], sep = "")
+  i <- i+1
+}
+
+# 在抓取who_cold中算出的該年最暖月份，並新增至第四欄中
+i <- 1
+while (i <= dim(who_cold)[1]) {
+  which <- grepl(who_cold[i, 3], month_tem_min$V4)
+  who_cold[i, 4] <- month_tem_min$min[which]
+  i <- i+1
+}
+
+# ----------------------------------------------------------------------
+cat("每⽇平均氣溫:day_tem_mean
+    每⽇最低溫的平均:day_tem_min_mean
+    每⽇最⾼溫的平均:day_tem_max_mean
+    每⽉平均氣溫:month_tem_mean
+    平均每⽉累積降⽔:month_pre_mean"
+    )
+
+x <- readline("請輸入今天的日期：")
