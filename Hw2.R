@@ -30,14 +30,29 @@ month_tem_mean <- aggregate(c0m530$TX01 ~ c0m530$month, c0m530, mean, na.rm = T)
 # 降水量
 month_pre_mean_front <- aggregate(c0m530$WD02 ~ c0m530$year + c0m530$month,
                             c0m530, mean, na.rm = T)
+
 p <- c("year", "month", "pre")
-setnames(month_pre_mean, p)
+setnames(month_pre_mean_front, p)
+
 month_pre_mean <- aggregate(month_pre_mean_front$pre ~ month_pre_mean_front$month, 
-                            month_pre_mean, na.rm = T)
+                            month_pre_mean_front, mean, na.rm = T)
 
 
 ### 計算一年中每天的溫度
 day_tem_mean <- aggregate(c0m530$TX01 ~ c0m530$month + c0m530$day, c0m530, mean, na.rm = T)
+
+# 加一下年跟月方便索引
+i <- 1
+while (i <= dim(day_tem_mean)[1]) {
+  day_tem_mean[i, 4] <- paste(day_tem_mean[i, 1], day_tem_mean[i, 2], sep = "")
+  i <- i+1
+}
+
+# 改欄位名稱
+a <- c("month", "day", "mean","month+day")
+setnames(day_tem_mean, a)
+
+
 
 # 取出每一天的最大與最小值
 day_tem_min <- aggregate(c0m530$TX01 ~ (c0m530$year+ c0m530$month + c0m530$day), 
@@ -49,7 +64,7 @@ day_tem_max <- aggregate(c0m530$TX01 ~ (c0m530$year+ c0m530$month + c0m530$day),
 
     ####day_tem_min[, day:= substr(c0m530$yyyymmddhh, 5, 8)]
 
-# 計算每天之最暖及最冷(24小時內啥時最冷、最暖)
+# 計算每天之最暖及最冷(24小時內啥時最冷、最暖)--------------------------
 day_tem_min_mean <- aggregate(day_tem_min$`c0m530$TX01` ~ 
                                  day_tem_min$`c0m530$month` + day_tem_min$`c0m530$day`, 
                                day_tem_min, mean, na.rm = T)
@@ -58,7 +73,29 @@ day_tem_max_mean <- aggregate(day_tem_max$`c0m530$TX01` ~
                                  day_tem_max$`c0m530$month` + day_tem_max$`c0m530$day`,
                               day_tem_max, mean, na.rm = T)
 
-#### 跑aggregate來看每年中最暖月及最冷越是誰
+
+# 加一下年跟月方便索引
+i <- 1
+while (i <= dim(day_tem_min_mean)[1]) {
+  day_tem_min_mean[i, 4] <- paste(day_tem_min_mean[i, 1], day_tem_min_mean[i, 2], sep = "")
+  i <- i+1
+}
+
+i <- 1
+while (i <= dim(day_tem_max_mean)[1]) {
+  day_tem_max_mean[i, 4] <- paste(day_tem_max_mean[i, 1], day_tem_max_mean[i, 2], sep = "")
+  i <- i+1
+}
+# 改欄位名稱
+a <- c("month", "day", "min","month+day")
+setnames(day_tem_min_mean, a)
+
+a <- c("month", "day", "max","month+day")
+setnames(day_tem_max_mean, a)
+
+
+
+#### 跑aggregate來看每年中最暖月及最冷越是誰----------------------------
 who_warm_front <- aggregate(c0m530$TX01 ~ c0m530$year + c0m530$month,
                             c0m530, mean, na.rm = T)
 
@@ -151,12 +188,48 @@ while (i <= dim(who_cold)[1]) {
   i <- i+1
 }
 
-# ----------------------------------------------------------------------
-cat("每⽇平均氣溫:day_tem_mean
-    每⽇最低溫的平均:day_tem_min_mean
-    每⽇最⾼溫的平均:day_tem_max_mean
-    每⽉平均氣溫:month_tem_mean
-    平均每⽉累積降⽔:month_pre_mean"
-    )
+# 更改who_warm與who_cold欄位名稱使其更好閱讀
+a <- c("year", "min_mean_tem", "month", "min")
+setnames(who_cold, a)
 
-x <- readline("請輸入今天的日期：")
+a <- c("year", "max_mean_tem", "month", "max")
+setnames(who_warm, a)
+# ----------------------------------------------------------------------
+
+repeat{
+  x <- readline("請輸入今天的日期(ex:1031)：")
+  if (x !="" ){
+  
+  min <- day_tem_min_mean$min[grepl(x, day_tem_min_mean$`month+day`)]
+  max <- day_tem_max_mean$max[grepl(x, day_tem_max_mean$`month+day`)]
+  mean <- day_tem_mean$mean[grepl(x, day_tem_mean$`month+day`)]
+  month_min <- month_tem_min$min[grepl(x, month_tem_min$V4)]
+  month_max <- month_tem_max$max[grepl(x, month_tem_max$V4)]
+  month_mean <- month_tem_mean$`c0m530$TX01`[grepl(substr(x, 1, 2), 
+                                                       month_tem_mean$`c0m530$month`)]
+  
+  cat("根據10年數據顯示:", substr(x, 1, 2), "月",substr(x, 3, 4), "日", "\n", sep = "")
+  cat("今天的最高溫度：", max, "\t", sep = "")
+  cat("今天的最低溫度：", min, "\t", sep = "")
+  cat("今天的平均溫度：", mean, "\n", sep = "")
+  cat("該月份最高溫的平均：", month_max, "\t", sep = "")
+  cat("該月份最低溫的平均：", month_min, "\t", sep = "")
+  cat("該月份的平均溫度：", month_mean, "\n", sep = "")
+  }
+  
+  repeat{
+    ans <- readline(prompt = ("是否想看資料索引位置(N/Y)："))
+    if (ans == "Y") {
+    cat("1. 每⽇平均氣溫：day_tem_mean\n",
+        "2. 每⽇最低溫的平均：day_tem_min_mean\n",
+        "4. 每⽉平均氣溫：month_tem_mean\n",
+        "3. 每⽇最⾼溫的平均：day_tem_max_mean\n",
+        "5. 平均每⽉累積降⽔：month_pre_mean\n",
+        "6. 最暖⽉的每⽇最⾼溫平均：who_warm\n", 
+        "7. 最冷月的每日最低溫平均：who_cold", sep = ""
+    )}
+    break
+  }
+  break
+}
+
